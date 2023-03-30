@@ -36,10 +36,12 @@ def get_loop_infos_from_folder():
     return loop_infos
 
 def make_dirs():
-    shutil.rmtree(loops_dir(), ignore_errors=True)
-    os.mkdir(loops_dir())
-    shutil.rmtree(comb_loops_dir(), ignore_errors=True)
     os.mkdir(comb_loops_dir())
+    os.mkdir(loops_dir())
+
+def rm_dirs():
+    shutil.rmtree(loops_dir(), ignore_errors=True)
+    shutil.rmtree(comb_loops_dir(), ignore_errors=True)
 
 def download_all_loops():
     res = s3.list_objects_v2(Bucket='loopme-loops')
@@ -69,6 +71,7 @@ def upload_comb_loops():
         s3.upload_file(Bucket='loopme-comb-loops', Key=f, Filename=os.path.join(comb_loops_dir(), f))
 
 def combine_all_loops():
+    rm_dirs()
     make_dirs()
     download_all_loops()
     loop_infos = get_loop_infos_from_folder()
@@ -77,7 +80,14 @@ def combine_all_loops():
             l2 = loop_infos[j]
             if l2['tempo'] == l1['tempo'] and l2['key'] == l1['key']:
                 combine_loop(l1, l2)
+    # Combine the other direction for different one getting quieted
+    for i, l1 in reversed(list(enumerate(loop_infos))):
+        for j in range(i - 1, -1, -1):
+            l2 = loop_infos[j]
+            if l2['tempo'] == l1['tempo'] and l2['key'] == l1['key']:
+                combine_loop(l1, l2)
     upload_comb_loops()
+    rm_dirs()
 
 if __name__ == '__main__':
     combine_all_loops()
