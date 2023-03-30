@@ -1,6 +1,6 @@
 "LoopMe Backend server code"
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, request
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -37,19 +37,17 @@ loop_infos = [
     },
 ]
 
-# increments to 4 and then back down to 0 to represent 5 loops
-# Starts on last index so that the first call will play loop 0
-loop_index = 4
-
-def increment_loop_index():
-    global loop_index
-    loop_index = (loop_index + 1) % NUM_LOOPS
-
 @app.route('/loop')
 def get_loop():
-    increment_loop_index()
-    return {'url': '/loops/loop_{}.mp3'.format(loop_index),
-            'info': loop_infos[loop_index]}
+    last_loop_index = request.args.get('last_loop', None)
+    print(request.args)
+    if last_loop_index is None:
+        raise Exception
+    last_loop_index = int(last_loop_index)
+    curr_index = (last_loop_index + 1) % NUM_LOOPS
+    return {'index': str(curr_index),
+            'url': '/loops/loop_{}.mp3'.format(curr_index),
+            'info': loop_infos[curr_index]}
 
 @app.route('/loops/<path:path>')
 def get_a_loop(path):
